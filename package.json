@@ -32,8 +32,6 @@
     "shadcn-ui": "^0.8.0",
     "openai": "^4.26.0",
     "stripe": "^14.2.0",
-    "@stripe/react-stripe-js": "^2.5.0",
-    "@stripe/stripe-js": "^3.0.0",
     "pdf-parse": "^1.1.1",
     "tesseract.js": "^5.0.0",
     "mailgun.js": "^10.0.0",
