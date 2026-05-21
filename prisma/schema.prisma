@@ -1,0 +1,154 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String       @id @default(cuid())
+  clerkId           String       @unique
+  email             String       @unique
+  inboxEmail        String       @unique
+  name              String?
+  avatarUrl         String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  subscription      Subscription?
+  invoices          Invoice[]
+  emails            Email[]
+  expenseCategories ExpenseCategory[]
+
+  @@index([clerkId])
+  @@index([email])
+}
+
+model Subscription {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  stripeCustomerId    String?  @unique
+  stripeSubscriptionId String? @unique
+  stripePriceId       String?
+
+  status              String   @default("free")
+  currentPeriodStart  DateTime?
+  currentPeriodEnd    DateTime?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([userId])
+  @@index([stripeCustomerId])
+}
+
+model Email {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  messageId       String   @unique
+  from            String
+  subject         String
+  body            String
+  plainText       String?
+
+  attachmentCount Int      @default(0)
+  attachments     EmailAttachment[]
+
+  invoices        Invoice[]
+
+  processedAt     DateTime?
+  status          String   @default("pending")
+  error           String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([messageId])
+  @@index([createdAt])
+}
+
+model EmailAttachment {
+  id        String   @id @default(cuid())
+  emailId   String
+  email     Email    @relation(fields: [emailId], references: [id], onDelete: Cascade)
+
+  filename  String
+  size      Int
+  mimetype  String
+  storageUrl String
+
+  createdAt DateTime @default(now())
+
+  @@index([emailId])
+}
+
+model Invoice {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  emailId         String?
+  email           Email?   @relation(fields: [emailId], references: [id], onDelete: SetNull)
+
+  category        String
+
+  invoiceNumber   String?
+  supplierName    String?
+  date            DateTime?
+
+  amountHT        Float    @default(0)
+  amountTVA       Float    @default(0)
+  amountTTC       Float    @default(0)
+
+  items           InvoiceItem[]
+
+  extractionStatus String  @default("pending")
+  extractionError  String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+  @@index([emailId])
+  @@index([category])
+  @@index([date])
+}
+
+model InvoiceItem {
+  id        String   @id @default(cuid())
+  invoiceId String
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  description String
+  quantity    Float?   @default(1)
+  unitPrice   Float?   @default(0)
+  totalPrice  Float
+
+  @@index([invoiceId])
+}
+
+model ExpenseCategory {
+  id   String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name String
+  color String @default("#3b82f6")
+  icon String @default("folder")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, name])
+  @@index([userId])
+}
